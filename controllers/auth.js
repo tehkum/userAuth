@@ -19,16 +19,15 @@ exports.login = async (req, res) => {
         message: 'Please provide an email and password'
       })
     }
-
-    db.query('SELECT * FROM users WHERE email = ?', [email], async (error, results) => {
+    db.query('SELECT * FROM users WHERE email = ?',[ email ], async (error, results) => {
       console.log(results);
-      if( !results || !(await bcrypt.compare(password, results[0]?.password)) ) {
-        console.log("402: " + results[0] + "?")
+      if( !results || !(await bcrypt.compare(password, results[0].password)) ) {
+        console.log(results);
         res.status(401).render('login', {
           message: 'Email or Password is incorrect'
         })
       } else {
-        const id = results[0]?.id;
+        const id = results[0].id;
 
         const token = jwt.sign({ id }, process.env.JWT_SECRET, {
           expiresIn: process.env.JWT_EXPIRES_IN
