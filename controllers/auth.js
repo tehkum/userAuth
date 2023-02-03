@@ -20,7 +20,7 @@ exports.login = async (req, res) => {
       })
     }
 
-    db.query('SELECT * FROM users WHERE email = ?', [email], async (error, results) => {
+    db.query('SELECT * FROM users WHERE email =${email}', [email], async (error, results) => {
       console.log(results);
       if( !results || !(await bcrypt.compare(password, results[0]?.password)) ) {
         console.log("402: " + results[0] + "?")
@@ -59,7 +59,7 @@ exports.register = (req, res) => {
 
   const { name, email, password, passwordConfirm } = req.body;
 
-  db.query('SELECT email FROM users WHERE email = ?', [email], async (error, results) => {
+  db.query('SELECT email FROM users WHERE email =${email}', [email], async (error, results) => {
     if(error) {
       console.log(error);
     }
