@@ -10,6 +10,52 @@ const db = mysql.createConnection({
   database: process.env.DATABASE
 });
 
+// exports.login = async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+
+//     if( !email || !password ) {
+//       return res.status(400).render('login', {
+//         message: 'Please provide an email and password'
+//       })
+//     }
+//     db.query('SELECT * FROM users WHERE email = ?', [email], async (error, results) => {
+//       console.log(results);
+//       console.log(req.body);
+//       if( !results || !(await bcrypt.compare(password, results[0].password)) ) {
+//         console.log(results);
+//         console.log(results[0].password);
+//         res.status(401).render('login', {
+//           message: 'Email or Password is incorrect'
+//         })
+//       } else {
+//         const id = results[0].id;
+
+//         const token = jwt.sign({ id }, process.env.JWT_SECRET, {
+//           expiresIn: process.env.JWT_EXPIRES_IN
+//         });
+
+//         console.log("The token is: " + token);
+
+//         const cookieOptions = {
+//           expires: new Date(
+//             Date.now() + process.env.JWT_COOKIE_EXPIRES * 24 * 60 * 60 * 1000
+//           ),
+//           httpOnly: true
+//         }
+
+//         res.cookie('jwt', token, cookieOptions );
+//         res.status(200).redirect("/");
+//       }
+
+//     })
+
+//   } catch (error) {
+//     console.log(error);
+//   }
+// }
+
+
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -17,41 +63,59 @@ exports.login = async (req, res) => {
     if( !email || !password ) {
       return res.status(400).render('login', {
         message: 'Please provide an email and password'
-      })
+      });
     }
-    db.query('SELECT * FROM users WHERE email = ?',[ email ], async (error, results) => {
-      console.log(results);
-      if( !results || !(await bcrypt.compare(password, results[0].password)) ) {
-        console.log(results);
-        res.status(401).render('login', {
-          message: 'Email or Password is incorrect'
-        })
-      } else {
-        const id = results[0].id;
-
-        const token = jwt.sign({ id }, process.env.JWT_SECRET, {
-          expiresIn: process.env.JWT_EXPIRES_IN
+    
+    db.query('SELECT * FROM users WHERE email = ?', [email], async (error, results) => {
+      if( error ) {
+        console.log(error);
+        return res.status(500).render('login', {
+          message: 'Something went wrong, please try again later'
         });
-
-        console.log("The token is: " + token);
-
-        const cookieOptions = {
-          expires: new Date(
-            Date.now() + process.env.JWT_COOKIE_EXPIRES * 24 * 60 * 60 * 1000
-          ),
-          httpOnly: true
-        }
-
-        res.cookie('jwt', token, cookieOptions );
-        res.status(200).redirect("/");
       }
-
-    })
+      
+      if( !results || results.length === 0 ) {
+        return res.status(401).render('login', {
+          message: 'Email or Password is incorrect'
+        });
+      }
+      console.log('Password:', password);
+      console.log('Hashed Password:', results[0].password);
+      const isPasswordMatch = await bcrypt.compare(password, results[0].password);
+      if( !isPasswordMatch ) {
+        return res.status(401).render('login', {
+          message: 'Email or Password is incorrect..........................'
+        });
+      }
+      
+      const id = results[0].id;
+      const token = jwt.sign({ id }, process.env.JWT_SECRET, {
+        expiresIn: process.env.JWT_EXPIRES_IN
+      });
+      
+      const cookieOptions = {
+        expires: new Date(
+          Date.now() + process.env.JWT_COOKIE_EXPIRES * 24 * 60 * 60 * 1000
+        ),
+        httpOnly: true
+      };
+      
+      res.cookie('jwt', token, cookieOptions );
+      res.status(200).redirect("/");
+    });
 
   } catch (error) {
     console.log(error);
+    res.status(500).render('login', {
+      message: 'Something went wrong, please try again later'
+    });
   }
-}
+};
+
+
+
+
+
 
 exports.register = (req, res) => {
   console.log(req.body);
